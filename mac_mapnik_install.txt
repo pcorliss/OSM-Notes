@@ -1,0 +1,33 @@
+#I had a ton of trouble with a brew installed version of mapnik so I'd recomend installing the framework and the 2 associated packages. Prereqs include, python, unix io and the proj framework.
+
+Tile Styling via TileMill http://mapbox.com/tilemill/
+Tile Generation via mapnik http://wiki.openstreetmap.org/wiki/Mapnik
+Slippy JS Implementation via Leaflet JS http://leaflet.cloudmade.com/index.html
+Chicago Dataset http://metro.teczno.com/#chicago
+Proj Framework http://www.kyngchaos.com/software:frameworks#proj
+Unix IO http://www.kyngchaos.com/software/frameworks#uniximageio
+Mapnik 0.7.2 http://dbsgeo.com/downloads/#mapnik-2.0.0
+Python 2.6 http://www.python.org/getit/releases/2.6/
+
+#Mapnik Tools
+sudo mkdir /mnt/osm
+cd /mnt/osm
+sudo chown ubuntu. .
+svn export -r 27279 http://svn.openstreetmap.org/applications/rendering/mapnik # Last #revision for 0.7.2
+cd mapnik
+./get-coastlines.sh
+
+mkdir tiles
+
+./generate_xml.py osm.xml output.xml --accept-none --dbname=gis
+
+#Renders whole world
+MAPNIK_MAP_FILE=output.xml MAPNIK_TILE_DIR=tiles ./generate_tiles.py
+
+cp ./generate_tiles.py ./generate_tiles_chicago.py
+#Edit gen_tiles_chicago and replace bbox and render_tiles commands with the following
+bbox = (-89.813, 40.966, -85.759, 42.663)
+render_tiles(bbox, mapfile, tile_dir, 6, 18, "Chicago")
+
+#Takes almost 18 hours on my MBP
+MAPNIK_MAP_FILE=output.xml MAPNIK_TILE_DIR=tiles ./generate_tiles_chicago.py 

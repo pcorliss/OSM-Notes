@@ -1,0 +1,94 @@
+#Spin up large instance of ami-ad36fbc4
+sudo mkdir /mnt/downloads
+sudo chown ubuntu. /mnt/downloads
+cd /mnt/downloads
+wget http://planet.osm.org/planet-latest.osm.bz2
+
+#Wait 35 minutes
+
+#Create, mount and Copy to EBS (30 Gb)
+sudo fdisk /dev/sdc
+sudo mkfs.ext3 /dev/sdc1
+sudo mkdir /mnt/sdc1
+sudo mount /dev/sdc1 /mnt/sdc1
+
+sudo mkdir osm
+cd osm
+sudo wget http://osm-metro-extracts.s3.amazonaws.com/chicago.osm.bz2
+
+sudo cp /mnt/downloads/planet-latest.osm.bz2 ./planet-111221.osm.bz2
+
+#Unmount EBS
+sudo umount /mnt/sdc1
+
+#Terminate
+sudo shutdown -h now
+
+#Start up High Mem instance 64Gb
+
+#Mount EBS
+sudo mkdir /mnt/sdc1
+sudo mount /dev/sdc1 /mnt/sdc1
+
+#Install postgis, compile osm2psql
+sudo apt-get install python-software-properties
+
+sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
+sudo add-apt-repository ppa:pitti/postgresql
+sudo add-apt-repository ppa:pi-deb/gis
+
+sudo apt-get update
+
+sudo apt-get install postgresql-9.0-postgis
+
+sudo apt-get install build-essential libxml2-dev libgeos-dev libpq-dev libbz2-dev proj libtool automake subversion
+svn co http://svn.openstreetmap.org/applications/utils/export/osm2pgsql/
+cd osm2pgsql
+./autogen.sh
+./configure
+make
+sudo make install
+
+#Symlink DB to large /mnt
+sudo mv /var/lib/postgresql/9.0/main postgresql_db/main
+ls -lha postgresql_db/main
+sudo ls -lha postgresql_db/main
+df -h
+sudo ls -lha /
+df -h /var/lib/postgresql/
+ls
+ln -s /mnt/osm/postgresql_db/main /var/lib/postgresql/9.0/main
+
+#Configure postgresql.conf
+shared_buffers = 4096MB
+maintenance_work_mem = 1024MB
+work_mem = 1024MB
+max_fsm_pages = 204800
+fsync = off
+port = 5432
+
+/etc/sysctl.d/30-postgresql-shm.conf
+kernel.shmmax = 1650958336
+sudo sysctl -p /etc/sysctl.d/30-postgresql-shm.conf
+
+#Restart postgres
+sudo /etc/init.d/postgresql restart
+
+#Init DB
+sudo su - postgres
+
+createdb -E UTF8 template_postgis
+psql -d postgres -c "UPDATE pg_database SET datistemplate='true' WHERE datname='template_postgis'" createlang plpgsql template_postgis
+psql -d template_postgis -f /usr/share/postgresql/9.0/contrib/postgis-1.5/postgis.sql
+psql -d template_postgis -f /usr/share/postgresql/9.0/contrib/postgis-1.5/spatial_ref_sys.sql
+psql -d template_postgis -f /usr/share/postgresql/9.0/contrib/postgis_comments.sql
+psql -d template_postgis -c "GRANT ALL ON geometry_columns TO PUBLIC;"
+psql -d template_postgis -c "GRANT ALL ON spatial_ref_sys TO PUBLIC;"
+createdb -T template_postgis -E UTF8 gis
+
+#Run test import of Chicago Data
+time bzcat /mnt/sdc1/osm/chicago.osm.bz2 | osm2pgsql -C 2000 -s -d gis /dev/stdin
+
+#Start Import in screen session
+screen -R planet_load
+time bzcat /mnt/sdc1/osm/planet-111221.osm.bz2 | osm2pgsql -C 8000 -s -d gis /dev/stdin

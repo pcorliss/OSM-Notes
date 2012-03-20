@@ -1,0 +1,26 @@
+sudo apt-get install git-core
+git clone
+https://github.com/mapnik/mapnik.git
+cd mapnik
+git checkout -b 0.7.x remotes/origin/0.7.x
+
+sudo apt-get install libicu-dev libboost-filesystem-dev libboost-program-options-dev libboost-python-dev libboost-regex-dev libboost-system-dev libboost-thread-dev python-dev libxml2 libxml2-dev libfreetype6 libfreetype6-dev libjpeg-dev libltdl7 libltdl-dev libpng-dev libgeotiff-dev libtiff-dev libtiffxx0c2 libcairo2 libcairo2-dev python-cairo python-cairo-dev libcairomm-1.0-1 libcairomm-1.0-dev ttf-unifont ttf-dejavu ttf-dejavu-core ttf-dejavu-extra python-nose libboost-iostreams-dev libsigc++-dev libsigc++0c2 libsigx-2.0-2 libsigx-2.0-dev libgdal1-dev python-gdal libcurl3
+
+python scons/scons.py configure INPUT_PLUGINS=all OPTIMIZATION=3 SYSTEM_FONTS=/usr/share/fonts/
+python scons/scons.py
+sudo python scons/scons.py install
+sudo ldconfig
+
+sudo apt-get install subversion
+sudo apt-get install unzip
+
+#Mapnik Tools
+sudo mkdir /mnt/osm
+cd /mnt/osm
+sudo chown ubuntu. .
+svn export -r 27279 http://svn.openstreetmap.org/applications/rendering/mapnik # Last revision for 0.7.2
+cd mapnik
+./get-coastlines.sh
+
+sudo su - postgres
+./generate_xml.py osm.xml output.xml --accept-none --dbname=gis
