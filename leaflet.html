@@ -1,0 +1,19 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="leaflet/CloudMade-Leaflet-404b097/dist/leaflet.css" />
+    <!--[if lte IE 8]><link rel="stylesheet" href="<path_to_dist>/leaflet.ie.css" /><![endif]-->
+    <script src="leaflet/CloudMade-Leaflet-404b097/dist/leaflet.js"></script>
+</head
+<body>
+  <div id="map" style="height: 400px"></div> <!-- width equals available horizontal space by default -->
+</body>
+<script>
+  var map = new L.Map('map');
+  var localURL = '/~pcorliss/osm/tiles/{z}/{x}/{y}.png';
+  var newLayer = new L.TileLayer(localURL, {maxZoom: 18, attribution: 'Via Groupon and Open Street Maps'});
+  var chicago = new L.LatLng(41.5, -87.25); // geographical point (longitude and latitude)
+  map.setView(chicago, 8);
+  map.addLayer(newLayer);
+</script>
+</html>
+

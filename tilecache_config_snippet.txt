@@ -1,0 +1,6 @@
+[osm]
+type=Mapnik
+mapfile=/mnt/osm/mapnik-utils/output.xml
+spherical_mercator=true
+tms_type=google
+metaTile=true
